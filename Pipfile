@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+pydantic = "*"
+loguru = "*"
+aioredis = "*"
+sqlalchemy = "*"
+uvicorn = "*"
+alembic = "*"
+pyjwt = "*"
+pytest = "*"
+py-bcrypt = "*"
+emails = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"

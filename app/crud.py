@@ -1,64 +1,128 @@
+from typing import TypeVar, Generic, Type, Optional, Any, List, Union, Dict
+
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from . import models, schemas
-from .database import engine
+from .database import engine, Base
+from .models import User, Psychology
+from .schemas import UserCreate, UserUpdate, PsychologyCreate, PsychologyUpdate
+from .utils import get_hashed_password, verify_password
+
+ModelType = TypeVar("ModelType", bound=Base)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
-def get_psychologies(db: Session, skip: int = 0, limit: int = 10):
-    """
-    get all psychologies knowledge
-    :param db: db session
-    :param skip: skip column
-    :param limit: query limit db line
-    :return: all psychologies
-    """
-    return db.query(models.Psychology).offset(skip).limit(limit).all()
+class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
+
+    def __init__(self, model: Type[ModelType]):
+        """crud base class"""
+        self.model = model
+
+    def get(self, db: Session, id: Any) -> Optional[ModelType]:
+        return db.query(self.model).filter(self.model.id == id).first()
+
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 10) -> List[ModelType]:
+        return db.query(self.model).offset(skip).limit(limit).all()
+
+    def create(self, db: Session, *, obj: CreateSchemaType) -> ModelType:
+        # db compatible with json
+        obj_data = jsonable_encoder(obj)
+        db_obj = self.model(**obj_data)
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
+    def update(self, db: Session, *, db_obj: ModelType, obj: Union[UpdateSchemaType, Dict[str, Any]]) -> ModelType:
+        """
+        update model, the update field can be Pydantic model or dict
+        :param db: db session
+        :param db_obj: updated db model
+        :param obj: obj need to change
+        :return: db model
+        """
+        # db data
+        obj_data = jsonable_encoder(db_obj)
+
+        if isinstance(obj, dict):
+            update_data = obj
+        else:
+            # if pydantic model, convert to dict
+            update_data = obj.dict(exclude_unset=True)
+
+        # if need updated field in db_obj, update it
+        for field in obj_data:
+            if field in update_data:
+                setattr(db_obj, field, update_data[field])
+        # update
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
+    def remove(self, db: Session, *, id: int) -> ModelType:
+        obj = db.query(self.model).get(id)
+        db.delete(obj)
+        db.commit()
+        return obj
 
 
-def get_psychology(db: Session, pid: int):
-    """
-    get psychology by id
-    :param db: db session
-    :param pid: psychology id
-    :return: psychology model
-    """
-    return db.query(models.Psychology).filter(models.Psychology.id == pid).first()
+class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
+    """crud for user"""
+
+    def get_by_email(self, db: Session, *, email: str) -> Optional[User]:
+        return db.query(User).filter(User.email == email).first()
+
+    def create(self, db: Session, *, obj: UserCreate) -> User:
+        db_user = User(
+            email=obj.email,
+            hashed_password=get_hashed_password(obj.password),
+            full_name=obj.full_name,
+            is_superuser=obj.is_superuser
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+
+    def update(self, db: Session, *, db_obj: UserUpdate, obj: Union[UserUpdate, Dict[str, Any]]) -> User:
+        if isinstance(obj, dict):
+            update_data = obj
+        else:
+            update_data = obj.dict(exclude_unset=True)
+        if update_data["password"]:
+            hashed_password = get_hashed_password(update_data["password"])
+            del update_data["password"]
+            update_data["hashed_password"] = hashed_password
+        return super().update(db, db_obj=db_obj, obj=obj)
+
+    def authenticate(self, db: Session, *, email: str, password: str) -> Optional[User]:
+        user = self.get_by_email(db, email=email)
+        if not user:
+            return None
+        if not verify_password(password, user.hashed_password):
+            return None
+        return user
 
 
-def get_psychology_random(db: Session):
-    """
-    get a psychology knowledge random
-    :param db: db session
-    :return: psychology model
-    """
-    if engine.name == 'sqlite' or 'postgresql':
-        return db.query(models.Psychology).order_by(func.random()).first()
-    elif engine.name == 'mysql':
-        return db.query(models.Psychology).order_by(func.rand()).first()
-    elif engine.name == 'oracle':
-        return db.query(models.Psychology).order_by('dbms_random.value').first()
+user = CRUDUser(User)
 
 
-def get_psychology_daily(db: Session):
-    """
-    get a psychology knowledge random every day
-    :param db: db session
-    :return: psychology model
-    """
-    pass
+class CRUDPsychology(CRUDBase[Psychology, PsychologyCreate, PsychologyUpdate]):
+
+    def get_psychology_random(self, db: Session) -> Psychology:
+        if engine.name == 'sqlite' or 'postgresql':
+            return db.query(Psychology).order_by(func.random()).first()
+        elif engine.name == 'mysql':
+            return db.query(Psychology).order_by(func.rand()).first()
+        elif engine.name == 'oracle':
+            return db.query(Psychology).order_by('dbms_random.value').first()
+
+    def get_psychology_daily(self, db: Session) -> Psychology:
+        pass
 
 
-def create_psychology(db: Session, psychology: schemas.PsychologyCreate):
-    """
-    create a spychology knowledge
-    :param db: db session
-    :param psychology: psychology schemas
-    :return: created psychology
-    """
-    db_psychology = models.Psychology(classify=psychology.classify, knowledge=psychology.knowledge)
-    db.add(db_psychology)
-    db.commit()
-    # refresh to db
-    db.refresh(db_psychology)
-    return db_psychology
+psychology = CRUDPsychology(Psychology)
