@@ -16,5 +16,6 @@ class User(Base):
     full_name = Column(String, index=True)  # full name
     email = Column(String, unique=True, index=True, nullable=False)  # email
     hashed_password = Column(String, nullable=False)  # password
-    is_active = Column(Boolean(), default=True)  # is a active user
-    is_superuser = Column(Boolean(), default=False)  # is superuser
+    is_active = Column(Boolean, default=True)  # is a active user
+    is_superuser = Column(Boolean, default=False)  # is superuser
+    is_confirm = Column(Boolean, default=False)  # is confirmed user

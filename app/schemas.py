@@ -51,10 +51,11 @@ class Psychology(PsychologyBase):
 # User schemas
 
 # Shared properties
-class UserBase(BaseModel):
+class UserBase(DateTimeMixin):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = True
     is_superuser: bool = False
+    is_confirm: bool = False
     full_name: Optional[str] = None
 
 
@@ -95,3 +96,7 @@ class Token(BaseModel):
 
 class TokenPayload(BaseModel):
     sub: Optional[int] = None
+
+
+class Msg(BaseModel):
+    msg: str

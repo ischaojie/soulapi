@@ -1,5 +1,6 @@
 from datetime import timedelta, datetime
-from typing import Union, Any
+from pathlib import Path
+from typing import Union, Any, Optional
 
 import bcrypt
 import emails
@@ -23,7 +24,7 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+            minutes=settings.ACCESS_TOKEN_EXPIRE
         )
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
@@ -40,12 +41,7 @@ def verify_password(origin_password: str, hashed_password: str) -> bool:
 
 # email
 
-def send_email(
-        email_to: str,
-        subject_template: str = "",
-        html_template: str = "",
-        environment=None,
-) -> None:
+def send_email(email_to: str, subject_template: str = "", html_template: str = "", environment=None, ) -> None:
     """
     send email to some mail address
     :param email_to: send to this email
@@ -78,3 +74,44 @@ def send_email(
     # send
     response = message.send(to=email_to, render=environment, smtp=smtp_options)
     logger.info(f"send email result: {response}")
+
+
+def send_test_email(email_to: str) -> None:
+    subject = f"{settings.PROJECT_NAME} - Test email"
+
+    with open(Path(settings.EMAIL_TEMPLATES_DIR) / "test_email.html") as f:
+        template = f.read()
+    send_email(
+        email_to,
+        subject,
+        template,
+        {"project_name": settings.PROJECT_NAME, "email": email_to}
+    )
+
+
+def send_confirm_email(email_to: str, token: str) -> None:
+    """send email verify user"""
+    subject = f"{settings.PROJECT_NAME} - Verification link"
+    with open() as f:
+        content = f.read()
+
+    link = f"{settings.SERVER_HOST}/confirm?token={token}"
+
+    send_email(
+        email_to=email_to,
+        subject_template=subject,
+        html_template=content,
+        environment={
+            "project_name": settings.PROJECT_NAME,
+            "email": email_to,
+            "link": link
+        }
+    )
+
+
+def verify_confirm_token(token: str) -> Optional[str]:
+    try:
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        return decoded_token["email"]
+    except jwt.PyJWTError:
+        return None

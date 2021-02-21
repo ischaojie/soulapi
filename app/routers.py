@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from app import schemas, crud, models
 from app.config import settings
-from app.depends import get_db, get_current_active_superuser, get_current_active_user
-from app.utils import create_access_token
+from app.depends import get_db, get_current_active_superuser, get_current_confirm_user
+from app.utils import create_access_token, send_confirm_email, verify_confirm_token
 
 psychologies_router = APIRouter()
 
@@ -19,7 +19,7 @@ def read_psychologies(
         db: Session = Depends(get_db),
         skip: int = 0,
         limit: int = 10,
-        current_user: models.User = Depends(get_current_active_user),
+        current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read limited psychologies knowledge"""
     psychologies = crud.psychology.get_multi(db, skip, limit)
@@ -40,7 +40,7 @@ def create_psychology(
 @psychologies_router.get("/random", response_model=schemas.Psychology)
 def read_psychology_random(
         db: Session = Depends(get_db),
-        current_user: models.User = Depends(get_current_active_user),
+        current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read psychology random"""
     db_psychology = crud.psychology.get_psychology_random(db)
@@ -52,7 +52,7 @@ def read_psychology_random(
 @psychologies_router.get("/daily", response_model=schemas.Psychology)
 def read_psychology_daily(
         db: Session = Depends(get_db),
-        current_user: models.User = Depends(get_current_active_user),
+        current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read psychology random every day"""
     # todo
@@ -70,7 +70,7 @@ def read_psychology(
         *,
         db: Session = Depends(get_db),
         pid: int,
-        current_user: models.User = Depends(get_current_active_user),
+        current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read psychology by id"""
     db_psychology = crud.psychology.get(db, pid)
@@ -162,9 +162,13 @@ def register(
 
     user_in = schemas.UserCreate(password=password, email=email, full_name=full_name)
     user = crud.user.create(db, user_in)
-    # todo: send confirm email
+    # send confirm email
     if settings.EMAILS_ENABLED and user.email:
-        pass
+        confirm_token = create_access_token(email, timedelta(settings.EMAIL_CONFIRM_TOKEN_EXPIRE))
+        send_confirm_email(
+            email_to=user.email,
+            token=confirm_token
+        )
     return user
 
 
@@ -179,9 +183,28 @@ def login(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
-    token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token = {
-        "access_token": create_access_token(user.id, token_expires),
+        "access_token": create_access_token(user.id),
         "token_type": "bearer",
     }
     return token
+
+
+@login_router.post("/confirm", response_model=schemas.Msg)
+def confirm(
+        db: Session = Depends(get_db),
+        token: str = Body(...),
+):
+    """confirm registered user"""
+    email = verify_confirm_token(token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+    user = crud.user.get_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # update confirm
+    user = crud.user.update(db, db_obj=user, obj={"is_confirm": True})
+    if not user.is_confirm:
+        raise HTTPException(status_code=400, detail="Confirmed error")
+    return {"msg": "Confirm user successfully"}
