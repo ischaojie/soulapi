@@ -9,17 +9,22 @@ from sqlalchemy.orm import Session
 from app import schemas, crud, models
 from app.config import settings
 from app.depends import get_db, get_current_active_superuser, get_current_confirm_user
-from app.utils import create_access_token, send_confirm_email, verify_confirm_token
+from app.utils import (
+    create_access_token,
+    send_confirm_email,
+    verify_confirm_token,
+    send_test_email,
+)
 
 psychologies_router = APIRouter()
 
 
 @psychologies_router.get("/", response_model=List[schemas.Psychology])
 def read_psychologies(
-        db: Session = Depends(get_db),
-        skip: int = 0,
-        limit: int = 10,
-        current_user: models.User = Depends(get_current_confirm_user),
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 10,
+    current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read limited psychologies knowledge"""
     psychologies = crud.psychology.get_multi(db, skip, limit)
@@ -28,10 +33,10 @@ def read_psychologies(
 
 @psychologies_router.post("/", response_model=schemas.Psychology)
 def create_psychology(
-        *,
-        db: Session = Depends(get_db),
-        psychology: schemas.PsychologyCreate,
-        current_user: models.User = Depends(get_current_active_superuser)
+    *,
+    db: Session = Depends(get_db),
+    psychology: schemas.PsychologyCreate,
+    current_user: models.User = Depends(get_current_active_superuser),
 ) -> Any:
     """create psychology knowledge, but only superuser can create."""
     return crud.psychology.create(db, psychology)
@@ -39,8 +44,8 @@ def create_psychology(
 
 @psychologies_router.get("/random", response_model=schemas.Psychology)
 def read_psychology_random(
-        db: Session = Depends(get_db),
-        current_user: models.User = Depends(get_current_confirm_user),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read psychology random"""
     db_psychology = crud.psychology.get_psychology_random(db)
@@ -51,8 +56,8 @@ def read_psychology_random(
 
 @psychologies_router.get("/daily", response_model=schemas.Psychology)
 def read_psychology_daily(
-        db: Session = Depends(get_db),
-        current_user: models.User = Depends(get_current_confirm_user),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read psychology random every day"""
     # todo
@@ -67,10 +72,10 @@ def read_psychology_daily(
 
 @psychologies_router.get("/{pid}", response_model=schemas.Psychology)
 def read_psychology(
-        *,
-        db: Session = Depends(get_db),
-        pid: int,
-        current_user: models.User = Depends(get_current_confirm_user),
+    *,
+    db: Session = Depends(get_db),
+    pid: int,
+    current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read psychology by id"""
     db_psychology = crud.psychology.get(db, pid)
@@ -81,11 +86,11 @@ def read_psychology(
 
 @psychologies_router.put("/{pid}", response_model=schemas.Psychology)
 def update_psychology(
-        *,
-        db: Session = Depends(get_db),
-        pid: int,
-        psychology: schemas.PsychologyUpdate,
-        current_user: models.User = Depends(get_current_active_superuser)
+    *,
+    db: Session = Depends(get_db),
+    pid: int,
+    psychology: schemas.PsychologyUpdate,
+    current_user: models.User = Depends(get_current_active_superuser),
 ):
     """update psychology, only superuser"""
     psychology_in_db = crud.psychology.get(db, pid)
@@ -98,10 +103,10 @@ def update_psychology(
 
 @psychologies_router.delete("/{pid}", response_model=schemas.Psychology)
 def delete_psychology(
-        *,
-        db: Session = Depends(get_db),
-        pid: int,
-        current_user: models.User = Depends(get_current_active_superuser)
+    *,
+    db: Session = Depends(get_db),
+    pid: int,
+    current_user: models.User = Depends(get_current_active_superuser),
 ) -> Any:
     """delete an psychology knowledge"""
     psychology_in_db = crud.psychology.get(db, pid)
@@ -117,10 +122,10 @@ user_router = APIRouter()
 
 @user_router.post("/", response_model=schemas.User)
 def create_user(
-        *,
-        db: Session = Depends(get_db),
-        user: schemas.UserCreate,
-        current_user: models.User = Depends(get_current_active_superuser)
+    *,
+    db: Session = Depends(get_db),
+    user: schemas.UserCreate,
+    current_user: models.User = Depends(get_current_active_superuser),
 ) -> Any:
     """create user, only superuser can create"""
     user = crud.user.get_by_email(db, user.email)
@@ -136,20 +141,14 @@ login_router = APIRouter()
 
 @login_router.post("/register", response_model=schemas.User)
 def register(
-        *,
-        db: Session = Depends(get_db),
-        password: str = Body(...),
-        email: EmailStr = Body(...),
-        full_name: str = Body(None),
+    *,
+    db: Session = Depends(get_db),
+    password: str = Body(...),
+    email: EmailStr = Body(...),
+    full_name: str = Body(None),
 ):
-    """
-    register a new user
-    :param db: db session
-    :param password: password
-    :param email: email (unique)
-    :param full_name: full name, can be black
-    :return: created model
-    """
+    """register a new user"""
+
     # why not use UserCreate schema? if used, user can control self become a superuser
 
     # only USERS_OPEN_REGISTRATION is True can register
@@ -164,21 +163,21 @@ def register(
     user = crud.user.create(db, user_in)
     # send confirm email
     if settings.EMAILS_ENABLED and user.email:
-        confirm_token = create_access_token(email, timedelta(settings.EMAIL_CONFIRM_TOKEN_EXPIRE))
-        send_confirm_email(
-            email_to=user.email,
-            token=confirm_token
+        confirm_token = create_access_token(
+            email, timedelta(settings.EMAIL_CONFIRM_TOKEN_EXPIRE)
         )
+        send_confirm_email(email_to=user.email, token=confirm_token)
     return user
 
 
 @login_router.post("/login", response_model=schemas.Token)
 def login(
-        db: Session = Depends(get_db),
-        form_data: OAuth2PasswordRequestForm = Depends()
+    db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ):
     """login to get access token"""
-    user = crud.user.authenticate(db, email=form_data.username, password=form_data.password)
+    user = crud.user.authenticate(
+        db, email=form_data.username, password=form_data.password
+    )
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
@@ -192,8 +191,8 @@ def login(
 
 @login_router.post("/confirm", response_model=schemas.Msg)
 def confirm(
-        db: Session = Depends(get_db),
-        token: str = Body(...),
+    db: Session = Depends(get_db),
+    token: str = Body(...),
 ):
     """confirm registered user"""
     email = verify_confirm_token(token)
@@ -203,8 +202,24 @@ def confirm(
     user = crud.user.get_by_email(db, email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # update confirm
+
+    # update user's is_confirm field
     user = crud.user.update(db, db_obj=user, obj={"is_confirm": True})
     if not user.is_confirm:
         raise HTTPException(status_code=400, detail="Confirmed error")
+
     return {"msg": "Confirm user successfully"}
+
+
+# utils router
+utils_router = APIRouter()
+
+
+@utils_router.post("/test-email", response_model=schemas.Msg, status_code=201)
+def test_email(
+    email_to: EmailStr,
+    current_user: models.User = Depends(get_current_active_superuser),
+):
+    """test emails server"""
+    send_test_email(email_to)
+    return {"msg": "Test email sent"}
