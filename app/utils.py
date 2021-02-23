@@ -4,7 +4,7 @@ from typing import Union, Any, Optional
 
 import bcrypt
 import emails
-import jwt
+from jose import jwt, JWTError
 from emails.template import JinjaTemplate as T
 from loguru import logger
 
@@ -27,7 +27,7 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
             minutes=settings.ACCESS_TOKEN_EXPIRE
         )
     to_encode = {"exp": expire, "sub": str(subject)}
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.TOKEN_ALGORITHMS)
     return encoded_jwt
 
 

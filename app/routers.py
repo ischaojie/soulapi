@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 
 from app import schemas, crud, models
 from app.config import settings
-from app.depends import get_db, get_current_active_superuser, get_current_confirm_user
+from app.depends import (
+    get_db,
+    get_current_active_superuser,
+    get_current_confirm_user,
+    get_current_user,
+)
 from app.utils import (
     create_access_token,
     send_confirm_email,
@@ -39,7 +44,7 @@ def create_psychology(
     current_user: models.User = Depends(get_current_active_superuser),
 ) -> Any:
     """create psychology knowledge, but only superuser can create."""
-    return crud.psychology.create(db, psychology)
+    return crud.psychology.create(db, obj=psychology)
 
 
 @psychologies_router.get("/random", response_model=schemas.Psychology)
@@ -182,6 +187,7 @@ def login(
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+
     token = {
         "access_token": create_access_token(user.id),
         "token_type": "bearer",
@@ -223,3 +229,9 @@ def test_email(
     """test emails server"""
     send_test_email(email_to)
     return {"msg": "Test email sent"}
+
+
+@utils_router.post("/test-token", response_model=schemas.User)
+def test_token(current_user: models.User = Depends(get_current_user)) -> Any:
+    """test token"""
+    return current_user

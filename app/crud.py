@@ -30,8 +30,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def create(self, db: Session, *, obj: CreateSchemaType) -> ModelType:
         # db compatible with json
-        obj_data = jsonable_encoder(obj)
-        db_obj = self.model(**obj_data)
+        db_obj = self.model(**obj.dict())
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)

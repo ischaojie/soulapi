@@ -10,12 +10,18 @@ loguru = "*"
 aioredis = "*"
 sqlalchemy = "*"
 uvicorn = "*"
-pyjwt = "*"
-pytest = "*"
 py-bcrypt = "*"
 emails = "*"
+alembic = "*"
+email-validator = "*"
+python-dotenv = "*"
+python-multipart = "*"
+typer = "*"
+python-jose = "*"
 
 [dev-packages]
+pytest = "*"
+black = "*"
 
 [requires]
 python_version = "3.9"

@@ -4,12 +4,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.orm import sessionmaker
 
-from config import settings
+from app.config import settings
 
-DATABASE_URL = "sqlite:///./app.db"
-# SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
 # db engine
-engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, connect_args={"check_same_thread": False})
+engine = create_engine(settings.DATABASE_URI, connect_args={"check_same_thread": False})
 # local db session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

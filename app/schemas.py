@@ -11,6 +11,7 @@ def convert_datetime_to_realworld(dt: datetime) -> str:
 
 class DateTimeMixin(BaseModel):
     """DateTime Mixin for created time and updated time"""
+
     created_at: datetime = None
     updated_at: datetime = None
 
@@ -21,15 +22,15 @@ class DateTimeMixin(BaseModel):
 
 
 class PsychologyClassifyEnum(str, Enum):
-    normal = 'normal'  # 普通心理学
-    experiment = 'experiment'  # 实验心理学
-    education = 'education'  # 教育心理学
-    society = 'society'  # 社会心理学
+    normal = "normal"  # 普通心理学
+    experiment = "experiment"  # 实验心理学
+    education = "education"  # 教育心理学
+    society = "society"  # 社会心理学
 
 
 class PsychologyBase(DateTimeMixin):
-    classify: PsychologyClassifyEnum
-    knowledge: str
+    classify: Optional[PsychologyClassifyEnum]
+    knowledge: Optional[str]
 
 
 class PsychologyCreate(PsychologyBase):
@@ -55,7 +56,7 @@ class UserBase(DateTimeMixin):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = True
     is_superuser: bool = False
-    is_confirm: bool = False
+    is_confirm: Optional[bool] = False
     full_name: Optional[str] = None
 
 
@@ -88,6 +89,7 @@ class UserInDB(UserInDBBase):
 
 
 # token schemas
+
 
 class Token(BaseModel):
     access_token: str

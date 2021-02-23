@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from app import models
 from app.database import engine
-from app.routers import psychologies_router, user_router, login_router
+from app.routers import psychologies_router, user_router, login_router, utils_router
 
 # create all model to db
 models.Base.metadata.create_all(bind=engine)
@@ -26,6 +26,7 @@ app = FastAPI(
 app.include_router(psychologies_router, prefix="/psychologies", tags=["psychologies"])
 app.include_router(user_router, prefix="/users", tags=["users"])
 app.include_router(login_router, tags=["login"])
+app.include_router(utils_router, prefix="/utils", tags=["utils"])
 
 
 @app.get("/")
