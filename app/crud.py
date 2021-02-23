@@ -16,7 +16,6 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
 class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-
     def __init__(self, model: Type[ModelType]):
         """crud base class"""
         self.model = model
@@ -24,7 +23,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def get(self, db: Session, id: Any) -> Optional[ModelType]:
         return db.query(self.model).filter(self.model.id == id).first()
 
-    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 10) -> List[ModelType]:
+    def get_multi(
+            self, db: Session, *, skip: int = 0, limit: int = 10
+    ) -> List[ModelType]:
         return db.query(self.model).offset(skip).limit(limit).all()
 
     def create(self, db: Session, *, obj: CreateSchemaType) -> ModelType:
@@ -36,7 +37,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.refresh(db_obj)
         return db_obj
 
-    def update(self, db: Session, *, db_obj: ModelType, obj: Union[UpdateSchemaType, Dict[str, Any]]) -> ModelType:
+    def update(
+            self,
+            db: Session,
+            *,
+            db_obj: ModelType,
+            obj: Union[UpdateSchemaType, Dict[str, Any]]
+    ) -> ModelType:
         """
         update model, the update field can be Pydantic model or dict
         :param db: db session
@@ -77,18 +84,39 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         return db.query(User).filter(User.email == email).first()
 
     def create(self, db: Session, *, obj: UserCreate) -> User:
+        """create normal user"""
         db_user = User(
             email=obj.email,
             hashed_password=get_hashed_password(obj.password),
             full_name=obj.full_name,
-            is_superuser=obj.is_superuser
+            created_at=obj.created_at,
+            updated_at=obj.updated_at
         )
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
         return db_user
 
-    def update(self, db: Session, *, db_obj: UserUpdate, obj: Union[UserUpdate, Dict[str, Any]]) -> User:
+    def create_superuser(self, db: Session, *, obj: UserCreate) -> User:
+        """create super user"""
+        db_superuser = User(
+            email=obj.email,
+            hashed_password=get_hashed_password(obj.password),
+            full_name=obj.full_name,
+            is_superuser=True,
+            is_confirm=True,
+            created_at=obj.created_at,
+            updated_at=obj.updated_at
+        )
+
+        db.add(db_superuser)
+        db.commit()
+        db.refresh(db_superuser)
+        return db_superuser
+
+    def update(
+            self, db: Session, *, db_obj: UserUpdate, obj: Union[UserUpdate, Dict[str, Any]]
+    ) -> User:
         if isinstance(obj, dict):
             update_data = obj
         else:
@@ -112,14 +140,13 @@ user = CRUDUser(User)
 
 
 class CRUDPsychology(CRUDBase[Psychology, PsychologyCreate, PsychologyUpdate]):
-
     def get_psychology_random(self, db: Session) -> Psychology:
-        if engine.name == 'sqlite' or 'postgresql':
+        if engine.name == "sqlite" or "postgresql":
             return db.query(Psychology).order_by(func.random()).first()
-        elif engine.name == 'mysql':
+        elif engine.name == "mysql":
             return db.query(Psychology).order_by(func.rand()).first()
-        elif engine.name == 'oracle':
-            return db.query(Psychology).order_by('dbms_random.value').first()
+        elif engine.name == "oracle":
+            return db.query(Psychology).order_by("dbms_random.value").first()
 
     def get_psychology_daily(self, db: Session) -> Psychology:
         pass

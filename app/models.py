@@ -19,3 +19,6 @@ class User(Base):
     is_active = Column(Boolean, default=True)  # is a active user
     is_superuser = Column(Boolean, default=False)  # is superuser
     is_confirm = Column(Boolean, default=False)  # is confirmed user
+
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
