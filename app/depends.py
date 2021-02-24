@@ -9,7 +9,7 @@ from app import models, schemas
 from app.config import settings
 from app.database import SessionLocal, RedisLocal
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
 
 
 def get_db():

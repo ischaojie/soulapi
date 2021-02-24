@@ -7,8 +7,8 @@ from pydantic import BaseSettings, PostgresDsn, EmailStr, validator
 class Settings(BaseSettings):
     """default config value"""
 
-    PROJECT_NAME: str = "Soul"  # project name
-    API_V1_STR: str = "/v1"  # api endpoint
+    PROJECT_NAME: str = "SoulAPI"  # project name
+    API_V1_STR: str = "/api/v1"  # api endpoint
     SERVER_HOST: str = "http://127.0.0.1:8000"
     SECRET_KEY: str = "I love lan"  # secret key for token
     TOKEN_ALGORITHMS: str = "HS256"  # algorithms

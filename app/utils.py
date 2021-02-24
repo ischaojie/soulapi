@@ -112,7 +112,7 @@ def send_confirm_email(email_to: str, token: str) -> None:
     with open(os.path.join(here, settings.EMAIL_TEMPLATES_DIR, "verify_user.html")) as f:
         content = f.read()
 
-    link = f"{settings.SERVER_HOST}/confirm?token={token}"
+    link = f"{settings.SERVER_HOST}{settings.API_V1_STR}/confirm?token={token}"
 
     send_email(
         email_to=email_to,

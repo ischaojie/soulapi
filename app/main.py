@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 
 from app import models
+from app.config import settings
 from app.database import engine
 from app.routers import psychologies_router, user_router, login_router, utils_router
 
@@ -16,17 +17,21 @@ tags_metadata = [
 ]
 
 app = FastAPI(
-    title="SoulAPI",
+    title=settings.PROJECT_NAME,
     description="The Soul api",
     version="1.0.0",
     openapi_tags=tags_metadata
 )
 
-# api router
-app.include_router(psychologies_router, prefix="/psychologies", tags=["psychologies"])
-app.include_router(user_router, prefix="/users", tags=["users"])
-app.include_router(login_router, tags=["login"])
-app.include_router(utils_router, prefix="/utils", tags=["utils"])
+
+# api v1 router
+app_v1 = APIRouter()
+app_v1.include_router(psychologies_router, prefix="/psychologies", tags=["psychologies"])
+app_v1.include_router(user_router, prefix="/users", tags=["users"])
+app_v1.include_router(login_router, tags=["login"])
+app_v1.include_router(utils_router, prefix="/utils", tags=["utils"])
+
+app.include_router(app_v1, prefix=settings.API_V1_STR)
 
 
 @app.get("/")
