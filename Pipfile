@@ -19,6 +19,7 @@ python-multipart = "*"
 typer = "*"
 python-jose = "*"
 jinja2 = "*"
+redis = "*"
 
 [dev-packages]
 pytest = "*"

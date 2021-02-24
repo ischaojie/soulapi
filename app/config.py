@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     USERS_OPEN_REGISTRATION: bool = True  # whether open user register
     DATABASE_URI: Union[str, PostgresDsn] = "sqlite:///./app.db"  # database url
 
+    # redis
+    REDIS_HOST: str = "127.0.0.1"
+    REDIS_PORT: int = 6379
+    REDIS_DB: str = "0"
+
     # token expire time
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE: int = 60 * 24 * 7

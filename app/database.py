@@ -5,9 +5,18 @@ from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
+import redis
 
 # db engine
 engine = create_engine(settings.DATABASE_URI, connect_args={"check_same_thread": False})
+# redis engine
+redis_engine = redis.ConnectionPool(
+    host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
+)
+
+RedisLocal = redis.Redis(connection_pool=redis_engine)
+
+
 # local db session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -22,6 +31,7 @@ class Base:
     @declared_attr
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
+
 
 # @app.on_event("startup")
 # async def startup_event():

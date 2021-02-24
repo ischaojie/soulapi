@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from loguru import logger
 from app import models, schemas
 from app.config import settings
-from app.database import SessionLocal
+from app.database import SessionLocal, RedisLocal
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
@@ -18,6 +18,16 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_redis_db():
+    redis = RedisLocal
+    try:
+        yield redis
+    except Exception as e:
+        logger.error(e)
+    finally:
+        redis.close()
 
 
 def get_current_user(

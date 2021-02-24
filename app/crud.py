@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import TypeVar, Generic, Type, Optional, Any, List, Union, Dict
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
+from redis import Redis
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -24,7 +26,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db.query(self.model).filter(self.model.id == id).first()
 
     def get_multi(
-            self, db: Session, *, skip: int = 0, limit: int = 10
+        self, db: Session, *, skip: int = 0, limit: int = 10
     ) -> List[ModelType]:
         return db.query(self.model).offset(skip).limit(limit).all()
 
@@ -37,11 +39,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     def update(
-            self,
-            db: Session,
-            *,
-            db_obj: ModelType,
-            obj: Union[UpdateSchemaType, Dict[str, Any]]
+        self,
+        db: Session,
+        *,
+        db_obj: ModelType,
+        obj: Union[UpdateSchemaType, Dict[str, Any]]
     ) -> ModelType:
         """
         update model, the update field can be Pydantic model or dict
@@ -89,7 +91,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             hashed_password=get_hashed_password(obj.password),
             full_name=obj.full_name,
             created_at=obj.created_at,
-            updated_at=obj.updated_at
+            updated_at=obj.updated_at,
         )
         db.add(db_user)
         db.commit()
@@ -105,7 +107,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             is_superuser=True,
             is_confirm=True,
             created_at=obj.created_at,
-            updated_at=obj.updated_at
+            updated_at=obj.updated_at,
         )
 
         db.add(db_superuser)
@@ -114,7 +116,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         return db_superuser
 
     def update(
-            self, db: Session, *, db_obj: UserUpdate, obj: Union[UserUpdate, Dict[str, Any]]
+        self, db: Session, *, db_obj: UserUpdate, obj: Union[UserUpdate, Dict[str, Any]]
     ) -> User:
         if isinstance(obj, dict):
             update_data = obj
@@ -149,8 +151,26 @@ class CRUDPsychology(CRUDBase[Psychology, PsychologyCreate, PsychologyUpdate]):
         elif engine.name == "oracle":
             return db.query(Psychology).order_by("dbms_random.value").first()
 
-    def get_psychology_daily(self, db: Session) -> Psychology:
-        pass
+    def get_psychology_daily(self, db: Session, redis: Redis) -> Optional[Psychology]:
+        # get cache from redis
+        redis_data = redis.hgetall("psychology_daily")
+        # only time equal current day read from redis
+        if redis_data and redis_data.get(b"date").decode("utf-8") == datetime.strftime(
+            datetime.now(), "%Y%m%d"
+        ):
+            # get psychology model
+            db_psychology = self.get(db, id=redis_data.get(b"id").decode("utf-8"))
+        else:
+            # if time not today, get random from db
+            # and then save to redis cache
+            db_psychology = self.get_psychology_random(db)
+            if not db_psychology:
+                return None
+            redis.hset("psychology_daily", "id", db_psychology.id)
+            now = datetime.strftime(datetime.now(), "%Y%m%d")
+            redis.hset("psychology_daily", "date", now)
+
+        return db_psychology
 
 
 psychology = CRUDPsychology(Psychology)

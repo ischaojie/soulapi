@@ -1,9 +1,11 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import List, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Body, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
+from loguru import logger
 from pydantic import EmailStr
+from redis import Redis
 from sqlalchemy.orm import Session
 
 from app import schemas, crud, models
@@ -13,6 +15,7 @@ from app.depends import (
     get_current_active_superuser,
     get_current_confirm_user,
     get_current_user,
+    get_redis_db,
 )
 from app.utils import (
     create_access_token,
@@ -62,14 +65,15 @@ def read_psychology_random(
 @psychologies_router.get("/daily", response_model=schemas.Psychology)
 def read_psychology_daily(
     db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis_db),
     current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read psychology random every day"""
-    # todo
+
     # 先从 redis 中取
     # redis 不存在或者不是当天的，从 db 中取
     # 同时写入 redis 缓存
-    db_psychology = crud.psychology.get_psychology_daily(db)
+    db_psychology = crud.psychology.get_psychology_daily(db, redis)
     if not db_psychology:
         raise HTTPException(status_code=404, detail="psychology knowledge not found")
     return db_psychology
