@@ -18,6 +18,7 @@ python-dotenv = "*"
 python-multipart = "*"
 typer = "*"
 python-jose = "*"
+jinja2 = "*"
 
 [dev-packages]
 pytest = "*"

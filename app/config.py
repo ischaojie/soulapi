@@ -8,7 +8,8 @@ class Settings(BaseSettings):
     """default config value"""
 
     PROJECT_NAME: str = "Soul"  # project name
-    API_V1_STR: str = "/api/v1"  # api endpoint
+    API_V1_STR: str = "/v1"  # api endpoint
+    SERVER_HOST: str = "http://127.0.0.1:8000"
     SECRET_KEY: str = "I love lan"  # secret key for token
     TOKEN_ALGORITHMS: str = "HS256"  # algorithms
     USERS_OPEN_REGISTRATION: bool = True  # whether open user register
@@ -21,11 +22,16 @@ class Settings(BaseSettings):
 
     # email
     # smtp default use aliyun
-    SMTP_TLS: bool = True  # smtp use TLS
+    SMTP_SSL: bool = True  # smtp use SSL
     SMTP_PORT: Optional[int] = 465  # smtp port
-    SMTP_HOST: Optional[str] = "smtpdm.aliyun.com"  # smtp host
-    SMTP_USER: Optional[str] = "soul"  # smtp user
-    SMTP_PASSWORD: Optional[str] = "19ZHezhezhu95"  # smtp password
+    SMTP_HOST: Optional[str] = "smtp.163.com"  # smtp host
+    SMTP_USER: Optional[str] = "soulapi"  # smtp user
+    SMTP_PASSWORD: Optional[str] = "KFMBEGZYNIBLBRYQ"  # smtp password
+
+    EMAILS_FROM_NAME: Optional[str] = "soulapi"  # email from name
+    EMAILS_FROM_EMAIL: Optional[EmailStr] = "soulapi@163.com"  # email from
+
+    EMAIL_TEMPLATES_DIR: str = "email-templates"  # email templates dir
 
     EMAILS_ENABLED: bool = True  # if email enabled
 
@@ -36,13 +42,6 @@ class Settings(BaseSettings):
             and values.get("SMTP_PORT")
             and values.get("EMAILS_FROM_EMAIL")
         )
-
-    EMAILS_FROM_NAME: Optional[str] = "Soul"  # email from name (soul)
-    EMAILS_FROM_EMAIL: Optional[
-        EmailStr
-    ] = "soul@rilkee.com"  # email from (admin@soul.fun)
-
-    EMAIL_TEMPLATES_DIR: str = "/app/email-templates"  # email templates dir
 
     @validator("EMAILS_FROM_NAME")
     def get_project_name(cls, v: Optional[str], values: Dict[str, Any]) -> str:

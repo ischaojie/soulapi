@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import List, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
@@ -151,6 +151,7 @@ def register(
     password: str = Body(...),
     email: EmailStr = Body(...),
     full_name: str = Body(None),
+    background_tasks: BackgroundTasks,
 ):
     """register a new user"""
 
@@ -160,18 +161,22 @@ def register(
     if not settings.USERS_OPEN_REGISTRATION:
         raise HTTPException(status_code=403, detail="forbidden for register")
 
-    user = crud.user.get_by_email(db, email)
+    user = crud.user.get_by_email(db, email=email)
     if user:
         raise HTTPException(status_code=400, detail="User already exists")
 
     user_in = schemas.UserCreate(password=password, email=email, full_name=full_name)
-    user = crud.user.create(db, user_in)
+    user = crud.user.create(db, obj=user_in)
+
     # send confirm email
     if settings.EMAILS_ENABLED and user.email:
         confirm_token = create_access_token(
-            email, timedelta(settings.EMAIL_CONFIRM_TOKEN_EXPIRE)
+            subject=email, expires_delta=timedelta(settings.EMAIL_CONFIRM_TOKEN_EXPIRE)
         )
-        send_confirm_email(email_to=user.email, token=confirm_token)
+        background_tasks.add_task(
+            send_confirm_email, email_to=user.email, token=confirm_token
+        )
+
     return user
 
 
@@ -197,15 +202,16 @@ def login(
 
 @login_router.post("/confirm", response_model=schemas.Msg)
 def confirm(
+    *,
     db: Session = Depends(get_db),
-    token: str = Body(...),
+    token: str,
 ):
     """confirm registered user"""
     email = verify_confirm_token(token)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
 
-    user = crud.user.get_by_email(db, email)
+    user = crud.user.get_by_email(db, email=email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -224,10 +230,11 @@ utils_router = APIRouter()
 @utils_router.post("/test-email", response_model=schemas.Msg, status_code=201)
 def test_email(
     email_to: EmailStr,
+    background_tasks: BackgroundTasks,
     current_user: models.User = Depends(get_current_active_superuser),
 ):
     """test emails server"""
-    send_test_email(email_to)
+    background_tasks.add_task(send_test_email, email_to=email_to)
     return {"msg": "Test email sent"}
 
 
