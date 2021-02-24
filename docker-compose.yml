@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  redis:
+    image: redis
+
+  api:
+    build: .
+    command: python manage.py run --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/soulapi
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis

@@ -23,7 +23,6 @@ redis = "*"
 
 [dev-packages]
 pytest = "*"
-black = "*"
 
 [requires]
 python_version = "3.9"

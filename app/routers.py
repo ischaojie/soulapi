@@ -35,7 +35,7 @@ def read_psychologies(
     current_user: models.User = Depends(get_current_confirm_user),
 ) -> Any:
     """read limited psychologies knowledge"""
-    psychologies = crud.psychology.get_multi(db, skip, limit)
+    psychologies = crud.psychology.get_multi(db, skip=skip, limit=limit)
     return psychologies
 
 
@@ -121,7 +121,7 @@ def delete_psychology(
     psychology_in_db = crud.psychology.get(db, pid)
     if not psychology_in_db:
         raise HTTPException(status_code=404, detail="psychology not found")
-    psychology = crud.psychology.remove(db, pid)
+    psychology = crud.psychology.remove(db, id=pid)
     return psychology
 
 
