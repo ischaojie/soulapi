@@ -1,5 +1,5 @@
 [[source]]
-url = "https://pypi.org/simple"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
 verify_ssl = true
 name = "pypi"
 
@@ -7,7 +7,6 @@ name = "pypi"
 fastapi = "*"
 pydantic = "*"
 loguru = "*"
-aioredis = "*"
 sqlalchemy = "*"
 uvicorn = "*"
 py-bcrypt = "*"
@@ -23,6 +22,10 @@ redis = "*"
 
 [dev-packages]
 pytest = "*"
+black = "*"
 
 [requires]
 python_version = "3.9"
+
+[pipenv]
+allow_prereleases = true
