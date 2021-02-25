@@ -1,14 +1,14 @@
 version: "3.9"
 services:
-  redis:
-    image: redis
+  cache:
+    image: redis:latest
 
-  api:
+  app:
     build: .
     command: python manage.py run --host 0.0.0.0 --port 8000
-    volumes:
-      - .:/soulapi
     ports:
       - "8000:8000"
+    environment:
+      - SOUL_API_REDIS_HOST=redis
     depends_on:
-      - redis
+      - cache
