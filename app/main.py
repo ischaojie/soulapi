@@ -35,5 +35,5 @@ app.include_router(app_v1, prefix=settings.API_V1_STR)
 
 
 @app.get("/")
-async def home():
-    return {"message": "Soul API"}
+def home():
+    return {"message": settings.DATABASE_URI}

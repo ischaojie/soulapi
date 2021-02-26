@@ -9,6 +9,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - SOUL_API_REDIS_HOST=redis
+      - SOUL_API_REDIS_HOST=cache
+      - SOUL_API_DATABASE_URL=sqlite:////etc/soulapi/app.db
+    volumes:
+      - ./test-volume-db:/etc/soulapi
     depends_on:
       - cache
+

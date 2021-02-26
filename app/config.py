@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     SERVER_HOST: str = "http://127.0.0.1:8000"
     SECRET_KEY: str = "I love lan"  # secret key for token
     TOKEN_ALGORITHMS: str = "HS256"  # algorithms
-    USERS_OPEN_REGISTRATION: bool = True  # whether open user register
-    DATABASE_URI: Union[str, PostgresDsn] = "sqlite:///./app.db"  # database url
+    USERS_OPEN_REGISTRATION: bool = False  # whether open user register
+    DATABASE_URI: str = "sqlite:///./app.db"  # database url
 
     # redis
     REDIS_HOST: str = "127.0.0.1"
@@ -56,11 +56,16 @@ class Settings(BaseSettings):
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"  # test email count
 
+    # superuser
+    SUPERUSER_NAME: str = "admin"
+    SUPERUSER_EMAIL: str = "admin@example.com"
+    SUPERUSER_PASSWORD: str = "123456"
+
     class Config:
         case_sensitive = True
         env_file = ".env"
         env_file_encoding = "utf-8"
-        env_prefix = 'SOUL_API_'
+        env_prefix = "SOUL_API_"
 
 
 settings = Settings()

@@ -9,6 +9,8 @@ from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+from app.config import settings
+
 config = context.config
 
 # Interpret the config file for Python logging.
@@ -34,7 +36,7 @@ target_metadata = Base.metadata
 
 
 def get_url():
-    return os.getenv("DATABASE_URL", "sqlite:///./app.db")
+    return os.getenv("DATABASE_URL", settings.DATABASE_URI)
 
 
 def run_migrations_offline():
