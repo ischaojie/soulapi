@@ -1,7 +1,7 @@
 from fastapi import FastAPI, APIRouter
 
 from app.config import settings
-from app.routers import psychologies_router, user_router, login_router, utils_router
+from app.routers import psychologies_router, user_router, login_router, utils_router, word_router
 
 # openapi tags metadata
 tags_metadata = [
@@ -9,6 +9,10 @@ tags_metadata = [
         "name": "psychologies",
         "description": "Manage psychologies knowledge. Even you can get them daily.",
     },
+    {
+        "name": "words",
+        "description": "Manage words translation. Even you can get them daily.",
+    }
 ]
 
 app = FastAPI(
@@ -23,6 +27,7 @@ app_v1 = APIRouter()
 app_v1.include_router(
     psychologies_router, prefix="/psychologies", tags=["psychologies"]
 )
+app_v1.include_router(word_router, prefix="/words", tags=["words"])
 app_v1.include_router(user_router, prefix="/users", tags=["users"])
 app_v1.include_router(login_router, tags=["login"])
 app_v1.include_router(utils_router, prefix="/utils", tags=["utils"])

@@ -2,14 +2,22 @@ from datetime import datetime
 from typing import TypeVar, Generic, Type, Optional, Any, List, Union, Dict
 
 from fastapi.encoders import jsonable_encoder
+from loguru import logger
 from pydantic import BaseModel
 from redis import Redis
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .database import engine, Base
-from .models import User, Psychology
-from .schemas import UserCreate, UserUpdate, PsychologyCreate, PsychologyUpdate
+from .models import User, Psychology, Word
+from .schemas import (
+    UserCreate,
+    UserUpdate,
+    PsychologyCreate,
+    PsychologyUpdate,
+    WordUpdate,
+    WordCreate,
+)
 from .utils import get_hashed_password, verify_password
 
 ModelType = TypeVar("ModelType", bound=Base)
@@ -32,7 +40,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def create(self, db: Session, *, obj: CreateSchemaType) -> ModelType:
         # db compatible with json
-        db_obj = self.model(**obj.dict())
+        obj_data = jsonable_encoder(obj)
+        db_obj = self.model(**obj_data)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
@@ -174,3 +183,40 @@ class CRUDPsychology(CRUDBase[Psychology, PsychologyCreate, PsychologyUpdate]):
 
 
 psychology = CRUDPsychology(Psychology)
+
+
+class CRUDWord(CRUDBase[Word, WordCreate, WordUpdate]):
+    def get_by_origin(self, db: Session, *, origin: str) -> Optional[Word]:
+        return db.query(Word).filter(Word.origin == origin).first()
+
+    def get_word_random(self, db: Session) -> Word:
+        if engine.name == "sqlite" or "postgresql":
+            return db.query(Word).order_by(func.random()).first()
+        elif engine.name == "mysql":
+            return db.query(Word).order_by(func.rand()).first()
+        elif engine.name == "oracle":
+            return db.query(Word).order_by("dbms_random.value").first()
+
+    def get_word_daily(self, db: Session, redis: Redis) -> Optional[Word]:
+        # get cache from redis
+        redis_data = redis.hgetall("word_daily")
+        # only time equal current day read from redis
+        if redis_data and redis_data.get(b"date").decode("utf-8") == datetime.strftime(
+            datetime.now(), "%Y%m%d"
+        ):
+            # get word model
+            db_word = self.get(db, id=redis_data.get(b"id").decode("utf-8"))
+        else:
+            # if time not today, get random from db
+            # and then save to redis cache
+            db_word = self.get_word_random(db)
+            if not db_word:
+                return None
+            redis.hset("word_daily", "id", db_word.id)
+            now = datetime.strftime(datetime.now(), "%Y%m%d")
+            redis.hset("word_daily", "date", now)
+
+        return db_word
+
+
+word = CRUDWord(Word)
