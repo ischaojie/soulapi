@@ -5,14 +5,17 @@ services:
 
   app:
     build: .
-    command: python manage.py run --host 0.0.0.0 --port 8000
+    command: >
+      bash -c "python manage.py db create
+      && python manage.py createsuperuser --noinput
+      && python manage.py run --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     environment:
       - SOUL_API_REDIS_HOST=cache
-      - SOUL_API_DATABASE_URL=sqlite:////etc/soulapi/app.db
+      - SOUL_API_DATABASE_URI=sqlite:////etc/soulapi/app.db
     volumes:
-      - ./test-volume-db:/etc/soulapi
+      - /Users/zhezhezhu/test-volume-db:/etc/soulapi
     depends_on:
       - cache
 

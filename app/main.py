@@ -1,12 +1,7 @@
 from fastapi import FastAPI, APIRouter
 
-from app import models
 from app.config import settings
-from app.database import engine
 from app.routers import psychologies_router, user_router, login_router, utils_router
-
-# create all model to db
-models.Base.metadata.create_all(bind=engine)
 
 # openapi tags metadata
 tags_metadata = [
@@ -20,13 +15,14 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description="The Soul api",
     version="1.0.0",
-    openapi_tags=tags_metadata
+    openapi_tags=tags_metadata,
 )
-
 
 # api v1 router
 app_v1 = APIRouter()
-app_v1.include_router(psychologies_router, prefix="/psychologies", tags=["psychologies"])
+app_v1.include_router(
+    psychologies_router, prefix="/psychologies", tags=["psychologies"]
+)
 app_v1.include_router(user_router, prefix="/users", tags=["users"])
 app_v1.include_router(login_router, tags=["login"])
 app_v1.include_router(utils_router, prefix="/utils", tags=["utils"])

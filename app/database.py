@@ -1,11 +1,10 @@
 from typing import Any
 
+import redis
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.orm import sessionmaker
-
 from app.config import settings
-import redis
 
 # db engine
 engine = create_engine(settings.DATABASE_URI, connect_args={"check_same_thread": False})
@@ -16,9 +15,14 @@ redis_engine = redis.ConnectionPool(
 
 RedisLocal = redis.Redis(connection_pool=redis_engine)
 
-
 # local db session
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+# init db create all db model to db tables
+def init_db():
+    # create all model to db
+    Base.metadata.create_all(bind=engine)
 
 
 # the models Base
