@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "SoulAPI"  # project name
     API_V1_STR: str = "/api/v1"  # api endpoint
-    SERVER_HOST: str = "http://127.0.0.1:8000"
+    SERVER_HOST: str = None # server host
     SECRET_KEY: str = "I love lan"  # secret key for token
     TOKEN_ALGORITHMS: str = "HS256"  # algorithms
     USERS_OPEN_REGISTRATION: bool = False  # whether open user register
@@ -26,15 +26,15 @@ class Settings(BaseSettings):
     EMAIL_CONFIRM_TOKEN_EXPIRE: int = 60 * 2  # email confirm token expired after 2 hour
 
     # email
-    # smtp default use aliyun
+    # smtp default is None, please config in system env
     SMTP_SSL: bool = True  # smtp use SSL
     SMTP_PORT: Optional[int] = 465  # smtp port
-    SMTP_HOST: Optional[str] = "smtp.163.com"  # smtp host
-    SMTP_USER: Optional[str] = "soulapi"  # smtp user
-    SMTP_PASSWORD: Optional[str] = "KFMBEGZYNIBLBRYQ"  # smtp password
+    SMTP_HOST: Optional[str] = None  # smtp host
+    SMTP_USER: Optional[str] = None  # smtp user
+    SMTP_PASSWORD: Optional[str] = None  # smtp password
 
-    EMAILS_FROM_NAME: Optional[str] = "soulapi"  # email from name
-    EMAILS_FROM_EMAIL: Optional[EmailStr] = "soulapi@163.com"  # email from
+    EMAILS_FROM_NAME: Optional[str] = "admin"  # email from name
+    EMAILS_FROM_EMAIL: Optional[EmailStr] = "soulapi@shiniao.fun"  # email from
 
     EMAIL_TEMPLATES_DIR: str = "email-templates"  # email templates dir
 
