@@ -173,6 +173,20 @@ def read_word_daily(
     return db_word
 
 
+@word_router.get("/{wid}", response_model=schemas.Word)
+def read_word(
+    *,
+    db: Session = Depends(get_db),
+    wid: int,
+    current_user: models.User = Depends(get_current_confirm_user),
+) -> Any:
+    """get word by id"""
+    db_word = crud.psychology.get(db, wid)
+    if not db_word:
+        raise HTTPException(status_code=404, detail="Word not found")
+    return db_word
+
+
 # user router
 user_router = APIRouter()
 

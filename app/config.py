@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "SoulAPI"  # project name
     API_V1_STR: str = "/api/v1"  # api endpoint
-    SERVER_HOST: str = None # server host
+    SERVER_HOST: str = ""  # server host
     SECRET_KEY: str = "I love lan"  # secret key for token
     TOKEN_ALGORITHMS: str = "HS256"  # algorithms
     USERS_OPEN_REGISTRATION: bool = False  # whether open user register
