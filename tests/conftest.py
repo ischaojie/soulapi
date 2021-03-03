@@ -1,42 +1,33 @@
 from typing import Generator
 
-from _pytest.monkeypatch import MonkeyPatch
-from fastapi.testclient import TestClient
 import pytest
+from faker import Faker
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app import schemas, crud
 from app.config import settings
-from app.database import SessionLocal, init_db
+from app.database import init_db, SessionLocal
 from app.main import app
-from faker import Faker
+from tests.utils import create_default_superuser
 
 
 @pytest.fixture(scope="session")
-def monkeysession(request):
-    mpatch = MonkeyPatch()
-    yield mpatch
-    mpatch.undo()
-
-
-@pytest.fixture(scope="session")
-def db(monkeysession) -> Generator:
-    # set sqlite in memory
-    monkeysession.setenv("SOUL_API_DATABASE_URI", "sqlite://")
+def db() -> Generator:
     # init all tables
     init_db()
-    session = SessionLocal()
-    yield session
+    yield SessionLocal()
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def client() -> Generator:
     with TestClient(app) as c:
         yield c
 
 
 @pytest.fixture(scope="module")
-def get_superuser_token(client: TestClient):
+def get_superuser_token(client: TestClient, db: Session):
+    create_default_superuser(db)
+
     login_data = {
         "username": settings.SUPERUSER_EMAIL,
         "password": settings.SUPERUSER_PASSWORD,
@@ -46,5 +37,6 @@ def get_superuser_token(client: TestClient):
 
 
 @pytest.fixture(scope="session")
-def faker():
-    yield Faker()
+def fake() -> Faker:
+    fake = Faker()
+    return fake
