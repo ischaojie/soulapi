@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 from typing import List, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Body, BackgroundTasks
@@ -16,12 +16,14 @@ from app.depends import (
     get_current_confirm_user,
     get_current_user,
     get_redis_db,
+    get_current_active_user,
 )
 from app.utils import (
     create_access_token,
     send_confirm_email,
     verify_confirm_token,
     send_test_email,
+    send_reset_password_email,
 )
 
 psychologies_router = APIRouter()
@@ -191,6 +193,71 @@ def read_word(
 user_router = APIRouter()
 
 
+# user me
+
+me_router = APIRouter()
+
+
+@me_router.get("/", response_model=schemas.User)
+def read_user_me():
+    """read current login user"""
+    pass
+
+
+@me_router.put("/", response_model=schemas.User)
+def update_user_me():
+    """update current login user info"""
+    pass
+
+
+@me_router.post("/reset-password", response_model=schemas.Msg)
+def reset_password(
+    *,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user),
+    background_tasks: BackgroundTasks,
+):
+    """reset current user password"""
+    email = current_user.email
+
+    # send confirm email
+    if settings.EMAILS_ENABLED and email:
+        confirm_token = create_access_token(
+            subject=email, expires_delta=timedelta(settings.EMAIL_CONFIRM_TOKEN_EXPIRE)
+        )
+        background_tasks.add_task(
+            send_reset_password_email, email_to=email, token=confirm_token
+        )
+    return {"msg": "Password reset email sent"}
+
+
+@me_router.post("/confirm-password", response_model=schemas.Msg)
+def new_password_confirm(
+    *,
+    db: Session = Depends(get_db),
+    token: str = Body(...),
+    password: str = Body(...),
+    current_user: models.User = Depends(get_current_active_user),
+) -> Any:
+    """confirm user reset password"""
+    email = verify_confirm_token(token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+    user = crud.user.get_by_email(db, email=email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # whether is current user
+    if user.email != current_user.email:
+        raise HTTPException(status_code=400, detail="Invalid User")
+
+    # update user's password field
+    user = crud.user.update(db, db_obj=user, obj={"password": password})
+
+    return {"msg": "Password reset successfully"}
+
+
 @user_router.post("/", response_model=schemas.User)
 def create_user(
     *,
@@ -198,12 +265,32 @@ def create_user(
     user: schemas.UserCreate,
     current_user: models.User = Depends(get_current_active_superuser),
 ) -> Any:
-    """create user, only superuser can create"""
-    user = crud.user.get_by_email(db, user.email)
-    if user:
+    """create user, only for superuser"""
+    user_db = crud.user.get_by_email(db, email=user.email)
+    if user_db:
         raise HTTPException(status_code=400, detail="User already exists")
-    user = crud.user.create(db, user)
+
+    user = crud.user.create(db, obj=user, is_confirm=True)
     return user
+
+
+@user_router.put("/{uid}", response_model=schemas.User)
+def update_user():
+    """update user, only for superuser"""
+    pass
+
+
+# superuser crud user
+@user_router.get("/", response_model=List[schemas.User])
+def read_users():
+    """read all users, only for superuser"""
+    pass
+
+
+@user_router.get("/{uid}", response_model=schemas.User)
+def read_user():
+    """read user by id, only for superuser"""
+    pass
 
 
 # login router
@@ -256,6 +343,7 @@ def login(
     )
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
+
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
@@ -270,7 +358,7 @@ def login(
 def confirm(
     *,
     db: Session = Depends(get_db),
-    token: str,
+    token: str = Body(...),
 ):
     """confirm registered user"""
     email = verify_confirm_token(token)

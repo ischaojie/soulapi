@@ -109,10 +109,38 @@ def send_confirm_email(email_to: str, token: str) -> None:
     """send email verify user"""
     subject = f"{settings.PROJECT_NAME} - Verification link"
     here = os.path.abspath(os.path.dirname(__file__))
-    with open(os.path.join(here, settings.EMAIL_TEMPLATES_DIR, "verify_user.html")) as f:
+    with open(
+        os.path.join(here, settings.EMAIL_TEMPLATES_DIR, "verify_user.html")
+    ) as f:
         content = f.read()
 
     link = f"{settings.SERVER_HOST}{settings.API_V1_STR}/confirm?token={token}"
+
+    send_email(
+        email_to=email_to,
+        subject_template=subject,
+        html_template=content,
+        environment={
+            "project_name": settings.PROJECT_NAME,
+            "email": email_to,
+            "link": link,
+        },
+    )
+
+
+def send_reset_password_email(email_to: str, token: str) -> None:
+    """send email to user for reset password"""
+    subject = f"{settings.PROJECT_NAME} - Password Reset"
+    here = os.path.abspath(os.path.dirname(__file__))
+
+    with open(
+        os.path.join(here, settings.EMAIL_TEMPLATES_DIR, "reset_password.html")
+    ) as f:
+        content = f.read()
+
+    link = (
+        f"{settings.SERVER_HOST}{settings.API_V1_STR}/me/confirm-password?token={token}"
+    )
 
     send_email(
         email_to=email_to,
