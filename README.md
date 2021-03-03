@@ -1,45 +1,49 @@
-# soul-api
-some datasets api
+# SoulAPI
+SoulAPI 的初衷是给自己的电子日历
+（ [Soul](https://githuv.com/shiniao/soul) ）
+提供数据集支持，包括考研心理学知识点以及英语高频词汇。 后期会陆续扩充其他数据集。
 
-### version
-- v1.0.0
+### datasets
+目前包含的数据集有：
+- [x] 考研心理学知识点
+- [x] 考研英语高频单词
 
-    Hello SoulAPi !
 
 ### develop
 
-default superuser login use:
+默认的 superuser 账号：
 ```
 email: admin@example.com
 password: 123456
 ```
 
-Fast run server:
+快速本地运行：
 
 ```shell
-# install all package
+# 使用 pipenv 安装依赖包
 pipenv install
+# 激活虚拟环境
 pipenv shell
 
-# generate all db tables
+# 生成数据库
 python manage.py db create
 
-# create default superuser with `--noinput`
+# 创建默认 superuser
 python manage.py createsuper --noinput
-# or just create a new superuser
-# python manage.py createsuper
+# 当然，也可以自定义
 
 # run server in 127.0.0.1:8000
 python manage.py run
 ```
+访问 http://127.0.0.1:8000/docs 查看 api 详情。
 
-use `python manage.py` for more detail.
+另外，项目提供了方便的管理脚本支持，执行`python manage.py --help` 了解更多。
 
 ### deploy in docker
 ```shell
 cd soulapi
 
-# change the docker-compose.yml for you
+# 根据自身需求修改 docker-compose.yml 配置
 
 # start
 docker-compose up -d
@@ -51,4 +55,10 @@ docker-compose up -d
 - [ ] user profile can change
 - [ ] superuser can add,update,delete user
 - [x] daily psychology support
-- [ ] add unit test
+- [x] add unit test
+
+
+### version
+- v1.0.0
+    Hello SoulAPi !
+    Psychologies knowledge and word api
