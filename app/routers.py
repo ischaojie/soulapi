@@ -189,19 +189,19 @@ def read_word(
     return db_word
 
 
-# user router
-user_router = APIRouter()
-
-
 # user me
 
 me_router = APIRouter()
 
 
 @me_router.get("/", response_model=schemas.User)
-def read_user_me():
+def read_user_me(
+    *,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user),
+):
     """read current login user"""
-    pass
+    return current_user
 
 
 @me_router.put("/", response_model=schemas.User)
@@ -240,6 +240,7 @@ def new_password_confirm(
     current_user: models.User = Depends(get_current_active_user),
 ) -> Any:
     """confirm user reset password"""
+    # todo: send reset password mail need change url redirect to web addr
     email = verify_confirm_token(token)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
@@ -256,6 +257,10 @@ def new_password_confirm(
     user = crud.user.update(db, db_obj=user, obj={"password": password})
 
     return {"msg": "Password reset successfully"}
+
+
+# user router
+user_router = APIRouter()
 
 
 @user_router.post("/", response_model=schemas.User)
@@ -275,22 +280,35 @@ def create_user(
 
 
 @user_router.put("/{uid}", response_model=schemas.User)
-def update_user():
+def update_user(
+    *,
+    db: Session = Depends(get_db),
+    user_id: int,
+    user_in: schemas.UserUpdate,
+    current_user: models.User = Depends(get_current_active_superuser),
+):
     """update user, only for superuser"""
-    pass
+    user = crud.user.get(db, id=user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="The user with this username does not exist in the system",
+        )
+    user = crud.user.update(db, db_obj=user, obj_in=user_in)
+    return user
 
 
 # superuser crud user
 @user_router.get("/", response_model=List[schemas.User])
-def read_users():
+def read_users(
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 10,
+    current_user: models.User = Depends(get_current_active_superuser),
+):
     """read all users, only for superuser"""
-    pass
-
-
-@user_router.get("/{uid}", response_model=schemas.User)
-def read_user():
-    """read user by id, only for superuser"""
-    pass
+    users = crud.user.get_multi(db, skip=skip, limit=limit)
+    return users
 
 
 # login router

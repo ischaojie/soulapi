@@ -51,10 +51,11 @@ docker-compose up -d
 
 ### TODO
 
-- [ ] reset password support
+- [x] reset password support
 - [ ] user profile can change
-- [ ] superuser can add,update,delete user
-- [x] daily psychology support
+- [x] superuser can read, add and update user
+- [x] psychology support
+- [x] english words support
 - [x] add unit test
 
 
