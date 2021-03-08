@@ -1,7 +1,6 @@
-import secrets
-from typing import Optional, Any, Dict, Union
+from typing import Optional, Any, Dict
 
-from pydantic import BaseSettings, PostgresDsn, EmailStr, validator
+from pydantic import BaseSettings, EmailStr, validator
 
 
 class Settings(BaseSettings):
@@ -26,12 +25,12 @@ class Settings(BaseSettings):
     EMAIL_CONFIRM_TOKEN_EXPIRE: int = 60 * 2  # email confirm token expired after 2 hour
 
     # email
-    # smtp default is None, please config in system env
+    # smtp config
     SMTP_SSL: bool = True  # smtp use SSL
     SMTP_PORT: Optional[int] = 465  # smtp port
-    SMTP_HOST: Optional[str] = None  # smtp host
-    SMTP_USER: Optional[str] = None  # smtp user
-    SMTP_PASSWORD: Optional[str] = None  # smtp password
+    SMTP_HOST: Optional[str]  # smtp host
+    SMTP_USER: Optional[str]  # smtp user
+    SMTP_PASSWORD: Optional[str]  # smtp password
 
     EMAILS_FROM_NAME: Optional[str] = "admin"  # email from name
     EMAILS_FROM_EMAIL: Optional[EmailStr] = "soulapi@shiniao.fun"  # email from
@@ -40,8 +39,13 @@ class Settings(BaseSettings):
 
     EMAILS_ENABLED: bool = True  # if email enabled
 
+    # superuser
+    SUPERUSER_NAME: str = "admin"
+    SUPERUSER_EMAIL: str = "admin@example.com"
+    SUPERUSER_PASSWORD: str = "123456"
+
     @validator("EMAILS_ENABLED")
-    def get_emails_enabled(cls, v: bool, values: Dict[str, Any]) -> bool:
+    def get_emails_enabled(cls, v, values: Dict[str, Any]) -> bool:
         return bool(
             values.get("SMTP_HOST")
             and values.get("SMTP_PORT")
@@ -53,13 +57,6 @@ class Settings(BaseSettings):
         if not v:
             return values["PROJECT_NAME"]
         return v
-
-    EMAIL_TEST_USER: EmailStr = "test@example.com"  # test email count
-
-    # superuser
-    SUPERUSER_NAME: str = "admin"
-    SUPERUSER_EMAIL: str = "admin@example.com"
-    SUPERUSER_PASSWORD: str = "123456"
 
     class Config:
         case_sensitive = True

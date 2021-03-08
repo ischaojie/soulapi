@@ -1,12 +1,10 @@
+import os
 import random
-from typing import Dict
 
 import pytest
-from faker import Faker
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app import schemas, crud
 from app.config import settings
 from app.schemas import PsychologyClassifyEnum
 from tests.utils import (
@@ -63,7 +61,6 @@ class TestLogin:
         assert faker_user["email"] == result["email"]
 
     def test_forbidden_register(self):
-
         settings.USERS_OPEN_REGISTRATION = False
 
         register_data = {
@@ -94,8 +91,37 @@ class TestLogin:
 
 
 class TestEmail:
+    @pytest.fixture(autouse=True)
+    def _init_test(self, client: TestClient, db: Session, fake, get_superuser_token):
+        self.client = client
+        self.db = db
+        self.token = get_superuser_token
+        self.fake = fake
+
+        SOUL_API_TEST_EMAIL_KEY = os.getenv("SOUL_API_TEST_EMAIL_KEY")
+        SOUL_API_TEST_EMAIL_NAMESPACE = os.getenv("SOUL_API_TEST_EMAIL_NAMESPACE")
+
+        self.test_email_url = (
+            f"https://api.testmail.app/api/json?"
+            f"apikey={SOUL_API_TEST_EMAIL_KEY}"
+            f"&namespace={SOUL_API_TEST_EMAIL_NAMESPACE}"
+            f"&&livequery=true"
+        )
+
     def test_email_send(self):
-        pass
+        test_email_to = os.getenv("SOUL_API_TEST_EMAIL_USER")
+        headers = {"Authorization": f"Bearer {self.token}"}
+        send_rsp = self.client.post(f"{settings.API_V1_STR}/utils/test-email?email_to={test_email_to}", headers=headers)
+        print(send_rsp.json())
+        assert send_rsp.status_code == 200
+        assert "Test email sent" in send_rsp.json()["msg"]
+
+        email_test_rsp = self.client.get(self.test_email_url, timeout=60)
+        assert email_test_rsp.status_code == 200
+        email_test = email_test_rsp.json()
+        assert email_test["result"] == "success"
+        assert email_test["count"] == 1
+        assert "test email" in email_test["emails"][0]["html"]
 
     def test_email_user_confirm(self):
         pass
@@ -113,11 +139,9 @@ class TestPsychology:
         self.fake = fake
 
     def test_read_psychology_multi(self):
-
         rsp = self.client.get(f"{settings.API_V1_STR}/psychologies")
 
     def test_read_psychology_by_id(self):
-
         random_psy = create_random_psychologies(self.db, self.fake)
 
         token = self.get_superuser_token
