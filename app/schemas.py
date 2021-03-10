@@ -129,3 +129,11 @@ class TokenPayload(BaseModel):
 
 class Msg(BaseModel):
     msg: str
+
+
+class Lunar(BaseModel):
+    date: str
+    ganzhi_year: str
+    ganzhi_month: str
+    ganzhi_day: str
+    shengxiao: str

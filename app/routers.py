@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import List, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Body, BackgroundTasks
@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import EmailStr
 from redis import Redis
 from sqlalchemy.orm import Session
-
+from lunar_python import Lunar
 from app import schemas, crud, models
 from app.config import settings
 from app.depends import (
@@ -414,3 +414,20 @@ def test_email(
 def test_token(current_user: models.User = Depends(get_current_user)) -> Any:
     """test token"""
     return current_user
+
+
+@utils_router.get("/lunar", response_model=schemas.Lunar)
+def lunar(
+    current_user: models.User = Depends(get_current_confirm_user),
+) -> Any:
+
+    """get current date in lunar"""
+
+    lunar = Lunar.fromDate(datetime.now())
+    return {
+        "date": f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}",
+        "ganzhi_year": lunar.getYearInGanZhi(),
+        "ganzhi_month": lunar.getMonthInGanZhi(),
+        "ganzhi_day": lunar.getDayInGanZhi(),
+        "shengxiao": lunar.getYearShengXiao(),
+    }

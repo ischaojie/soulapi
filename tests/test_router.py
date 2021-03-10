@@ -1,8 +1,10 @@
 import os
 import random
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
+from lunar_python import Lunar
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -111,7 +113,10 @@ class TestEmail:
     def test_email_send(self):
         test_email_to = os.getenv("SOUL_API_TEST_EMAIL_USER")
         headers = {"Authorization": f"Bearer {self.token}"}
-        send_rsp = self.client.post(f"{settings.API_V1_STR}/utils/test-email?email_to={test_email_to}", headers=headers)
+        send_rsp = self.client.post(
+            f"{settings.API_V1_STR}/utils/test-email?email_to={test_email_to}",
+            headers=headers,
+        )
         print(send_rsp.json())
         assert send_rsp.status_code == 200
         assert "Test email sent" in send_rsp.json()["msg"]
@@ -180,3 +185,24 @@ class TestPsychology:
         )
 
         assert rsp.status_code == 200
+
+
+class TestUtils:
+    @pytest.fixture(autouse=True)
+    def _init_test(self, client: TestClient, db: Session, fake, get_superuser_token):
+        self.client = client
+        self.db = db
+        self.get_superuser_token = get_superuser_token
+        self.fake = fake
+
+    def test_lunar(self):
+        lunar = Lunar.fromDate(datetime.now())
+        token = self.get_superuser_token
+        headers = {"Authorization": f"Bearer {token}"}
+        rsp = self.client.get(f"{settings.API_V1_STR}/utils/lunar", headers=headers)
+        assert rsp.status_code == 200
+        result = rsp.json()
+
+        assert (
+            result["date"] == f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}"
+        )
