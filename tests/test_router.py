@@ -1,5 +1,6 @@
 import os
 import random
+import time
 from datetime import datetime
 
 import pytest
@@ -37,6 +38,17 @@ class TestLogin:
         assert r.status_code == 200
         assert "access_token" in tokens
         assert tokens["access_token"]
+
+    def test_superuser_token_can_always_access(self):
+        # 2 second expire
+        settings.ACCESS_TOKEN_EXPIRE = 1 / 60 * 2
+        headers = {"Authorization": f"Bearer {self.token}"}
+
+        rsp = self.client.post(f"{settings.API_V1_STR}/utils/test-token", headers=headers)
+        assert rsp.status_code == 200
+        time.sleep(3)
+        rsp_after = self.client.post(f"{settings.API_V1_STR}/utils/test-token", headers=headers)
+        assert rsp.status_code == 200
 
     def test_token_authorization(self):
         headers = {"Authorization": f"Bearer {self.token}"}
@@ -204,5 +216,5 @@ class TestUtils:
         result = rsp.json()
 
         assert (
-            result["date"] == f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}"
+                result["date"] == f"{lunar.getMonthInChinese()}月{lunar.getDayInChinese()}"
         )

@@ -7,7 +7,7 @@ import emails
 from emails.template import JinjaTemplate as T
 from jose import jwt
 from loguru import logger
-from lunar_python import Lunar
+
 from app.config import settings
 
 
@@ -15,7 +15,7 @@ from app.config import settings
 
 
 def create_access_token(
-    subject: Union[str, Any], expires_delta: timedelta = None
+        subject: Union[str, Any], expires_delta: timedelta = None, is_superuser: bool = False
 ) -> str:
     """
     generate jwt token
@@ -28,6 +28,11 @@ def create_access_token(
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE)
     to_encode = {"exp": expire, "sub": str(subject)}
+
+    # superuser token can always access
+    if is_superuser:
+        to_encode.pop("exp")
+
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.TOKEN_ALGORITHMS
     )
@@ -46,10 +51,10 @@ def verify_password(origin_password: str, hashed_password: str) -> bool:
 
 
 def send_email(
-    email_to: str,
-    subject_template: str = "",
-    html_template: str = "",
-    environment=None,
+        email_to: str,
+        subject_template: str = "",
+        html_template: str = "",
+        environment=None,
 ) -> None:
     """
     send email to some mail address
@@ -110,7 +115,7 @@ def send_confirm_email(email_to: str, token: str) -> None:
     subject = f"{settings.PROJECT_NAME} - Verification link"
     here = os.path.abspath(os.path.dirname(__file__))
     with open(
-        os.path.join(here, settings.EMAIL_TEMPLATES_DIR, "verify_user.html")
+            os.path.join(here, settings.EMAIL_TEMPLATES_DIR, "verify_user.html")
     ) as f:
         content = f.read()
 
@@ -134,7 +139,7 @@ def send_reset_password_email(email_to: str, token: str) -> None:
     here = os.path.abspath(os.path.dirname(__file__))
 
     with open(
-        os.path.join(here, settings.EMAIL_TEMPLATES_DIR, "reset_password.html")
+            os.path.join(here, settings.EMAIL_TEMPLATES_DIR, "reset_password.html")
     ) as f:
         content = f.read()
 
