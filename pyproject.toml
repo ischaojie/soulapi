@@ -5,6 +5,11 @@ description = ""
 authors = ["shiniao <zhuzhezhe95@gmail.com>"]
 license = "Apache"
 
+[[tool.poetry.source]]
+name = 'private'
+url = 'https://mirrors.aliyun.com/pypi/simple/'
+
+
 [tool.poetry.dependencies]
 python = "^3.7"
 fastapi = "^0.63.0"
