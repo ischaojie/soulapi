@@ -24,6 +24,7 @@ app = FastAPI(
 
 # api v1 router
 app_v1 = APIRouter()
+
 app_v1.include_router(
     psychologies_router, prefix="/psychologies", tags=["psychologies"]
 )
